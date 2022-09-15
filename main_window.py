@@ -1,5 +1,7 @@
 
 import sys
+import platform
+import psutil
 # import some PyQt5 modules
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtGui import QImage
@@ -13,14 +15,18 @@ from ui_splash_screen import *
 from ui_main import *
 from imges_rc import *
 
+
+QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
+QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent=parent)
-        self.resize(500, 350)
-        self.center()
+        self.resize(200, 250)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
+        self.init_system_stats(self)
 
         # create a timer
         self.timer = QTimer()
@@ -81,6 +87,69 @@ class MainWindow(QtWidgets.QMainWindow):
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+
+    #CPU stats
+    def init_system_stats(self, arg):
+        self.cpu_percent = 0
+        self.ram_percent = 0
+        self.traces = dict()
+
+        self.ui.label.setText(f"{platform.system()} {platform.machine()}")
+        self.ui.label_2.setText(f"Processor: {platform.processor()}")
+        self.current_timer_systemStat = QtCore.QTimer()
+        self.current_timer_systemStat.timeout.connect(
+        self.getsystemStatpercent)
+        self.current_timer_systemStat.start(1000)
+
+
+    def getsystemStatpercent(self):
+        self.cpu_percent = psutil.cpu_percent()
+        self.ram_percent = psutil.virtual_memory().percent
+        self.setValue(self.cpu_percent, self.ui.labelPercentageCPU,
+                      self.ui.circularProgressCPU, "rgba(85, 170, 255, 255)")
+        self.setValue(self.ram_percent, self.ui.labelPercentageRAM,
+                      self.ui.circularProgressRAM, "rgba(255, 0, 127, 255)")
+
+
+    def setValue(self, value, labelPercentage, progressBarName, color):
+
+        sliderValue = value
+
+        # HTML TEXT PERCENTAGE
+        htmlText = """<p align="center"><span style=" font-size:50pt;">{VALUE}</span><span style=" font-size:40pt; vertical-align:super;">%</span></p>"""
+        labelPercentage.setText(htmlText.replace(
+            "{VALUE}", f"{sliderValue:.1f}"))
+
+        # CALL DEF progressBarValue
+        self.progressBarValue(sliderValue, progressBarName, color)
+
+    def progressBarValue(self, value, widget, color):
+        styleSheet = """
+        QFrame{
+        	border-radius: 110px;
+        	background-color: qconicalgradient(cx:0.5, cy:0.5, angle:90, stop:{STOP_1} rgba(255, 0, 127, 0), stop:{STOP_2} {COLOR});
+        }
+        """
+
+        progress = (100 - value) / 100.0
+
+        # GET NEW VALUES
+        stop_1 = str(progress - 0.001)
+        stop_2 = str(progress)
+
+        # FIX MAX VALUE
+        if value == 100:
+            stop_1 = "1.000"
+            stop_2 = "1.000"
+
+        # SET VALUES TO NEW STYLESHEET
+        newStylesheet = styleSheet.replace("{STOP_1}", stop_1).replace(
+            "{STOP_2}", stop_2).replace("{COLOR}", color)
+
+        # APPLY STYLESHEET WITH NEW VALUES
+        widget.setStyleSheet(newStylesheet)
+
 
 
 # SPLASH SCREEN

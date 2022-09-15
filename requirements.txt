@@ -155,6 +155,7 @@ pyqt5-plugins==5.15.4.2.2
 PyQt5-Qt5==5.15.2
 PyQt5-sip==12.11.0
 pyqt5-tools==5.15.4.3.2
+pyqtgraph==0.12.4
 pyRFC3339==1.1
 pyrsistent==0.15.5
 python-apt==2.0.0+ubuntu0.20.4.7
